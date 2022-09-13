@@ -4,6 +4,8 @@ import 'package:flutter/src/foundation/key.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter_app_twitter/model/account.dart';
 import 'package:flutter_app_twitter/model/post.dart';
+import 'package:flutter_app_twitter/utils/firestore/post.dart';
+import 'package:flutter_app_twitter/utils/firestore/users.dart';
 import 'package:flutter_app_twitter/vew/time_line/post_page.dart';
 import 'package:intl/intl.dart';
 
@@ -32,13 +34,13 @@ List<Post> postlist = [
     id: '1',
     content:'初めまして',
     postAccountId:'1',
-    createTime: DateTime.now(),  
+    createTime: Timestamp.now(),  
     ),
     Post(
     id: '2',
     content:'初めまして2回',
     postAccountId:'1',
-    createTime: DateTime.now(),  
+    createTime: Timestamp.now(),  
     ),
 ];
 
@@ -52,49 +54,85 @@ List<Post> postlist = [
         backgroundColor: Theme.of(context).canvasColor,//色をbodyと同じ色に
         elevation: 2,//影の濃さ
       ),
-      body: ListView.builder(
-        itemCount: postlist.length,//postlistの数
-        itemBuilder: (context, index) {
-          return Container(
-            decoration: BoxDecoration(
-              border: index == 0? Border(
-                top: BorderSide(color: Colors.grey,width: 0),
-                bottom: BorderSide(color: Colors.grey,width: 0),
-              ) :Border(bottom: BorderSide(color: Colors.grey,width: 0),),
-            ),
-            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 15),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 22,
-                  foregroundImage: NetworkImage(myAccount.imagePath),
-                ),
-                Expanded(
-                  child: Container(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+      body: StreamBuilder<QuerySnapshot>(
+        stream: PostFirestore.posts.orderBy('created_time', descending: true).snapshots() ,
+        builder: (context, postSnapshot) {
+          if (postSnapshot.hasData) {
+            List<String> postAccountIds = [];
+            postSnapshot.data!.docs.forEach((doc) {
+              Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+              if (!postAccountIds.contains(data['post_accont_id'])) {
+                postAccountIds.add(data['post_account_id']);
+              }
+            });
+
+            return FutureBuilder<Map<String,Account>?>(
+              future: UserFirestore.getPostUserMap(postAccountIds),
+              builder: (context, userSnapshot) {
+                if (userSnapshot.hasData && userSnapshot.connectionState == ConnectionState.done) {
+                  return ListView.builder(
+                itemCount: postSnapshot.data!.docs.length,//postlistの数
+                itemBuilder: (context, index) {
+                  Map<String, dynamic> data = postSnapshot.data!.docs[index].data() as Map<String, dynamic>;
+                  Post post = Post(
+                    id: postSnapshot.data!.docs[index].id,
+                    content: data['content'],
+                    postAccountId: data['post_account_id'],
+                    createTime: data['created_time']
+                  );
+                  Account postAccount = userSnapshot.data![post.postAccountId]!;
+                  return Container(
+                    decoration: BoxDecoration(
+                      border: index == 0? Border(
+                        top: BorderSide(color: Colors.grey,width: 0),
+                        bottom: BorderSide(color: Colors.grey,width: 0),
+                      ) :Border(bottom: BorderSide(color: Colors.grey,width: 0),),
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 15),
+                    child: Row(
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
+                        CircleAvatar(
+                          radius: 22,
+                          foregroundImage: NetworkImage(postAccount.imagePath),
+                        ),
+                        Expanded(
+                          child: Container(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(myAccount.name,style: TextStyle(fontWeight:  FontWeight.bold),),
-                                Text('@${myAccount.userId}',style: TextStyle(color: Colors.green)),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(postAccount.name,style: TextStyle(fontWeight:  FontWeight.bold),),
+                                        Text('@${postAccount.userId}',style: TextStyle(color: Colors.green)),
+                                      ],
+                                    ),
+                                    Text(DateFormat('M/d/yy').format(post.createTime!.toDate())),
+                                  ],
+                                ),
+                                Text(post.content),
                               ],
                             ),
-                            Text(DateFormat('M/d/yy').format(postlist[index].createTime!)),
-                          ],
+                          ),
                         ),
-                        Text(postlist[index].content),
                       ],
                     ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
+                  );
+                },
+                      );
+                } else {
+                  return Container();
+                }
+                
+              }
+            );
+          } else {
+            return Container();
+          }
+          
+        }
       ),
       //tweetボタンの実装
     );

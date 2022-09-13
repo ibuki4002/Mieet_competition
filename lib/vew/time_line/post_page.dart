@@ -2,6 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/foundation/key.dart';
 import 'package:flutter/src/widgets/framework.dart';
+import 'package:flutter_app_twitter/model/post.dart';
+import 'package:flutter_app_twitter/utils/authentication.dart';
+import 'package:flutter_app_twitter/utils/firestore/post.dart';
 
 class PostPage extends StatefulWidget {
   const PostPage({Key? key}) : super(key: key);
@@ -32,8 +35,17 @@ class _PostPageState extends State<PostPage> {
             ),
             SizedBox(height: 20,),//縦の間隔
             ElevatedButton(
-              onPressed: () {
-
+              onPressed: () async{
+                if (contentController.text.isNotEmpty) {
+                  Post newPost = Post(
+                    content:  contentController.text,
+                    postAccountId: Authentication.myAccount!.id,
+                  );
+                  var result = await PostFirestore.addPost(newPost);
+                  if (result== true) {
+                    Navigator.pop(context);
+                  }
+                }
               },
                child: Text('投稿'),
              ),

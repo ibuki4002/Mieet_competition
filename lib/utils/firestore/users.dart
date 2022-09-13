@@ -1,6 +1,11 @@
+import 'dart:html';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_app_twitter/model/account.dart';
 import 'package:flutter_app_twitter/utils/authentication.dart';
+import 'package:flutter_app_twitter/utils/firestore/post.dart';
 
 class UserFirestore {
   static final _firestoreInstance = FirebaseFirestore.instance;
@@ -43,4 +48,53 @@ class UserFirestore {
       return false;
     }
   }
+
+  static Future<dynamic> updateUser(Account updateAccount) async{
+    try {
+      await users.doc(updateAccount.id).update({
+        'name': updateAccount.name,
+        'image_path': updateAccount.imagePath,
+        'user_id':updateAccount.userId,
+        'self_intoduction':updateAccount.selfIntroduction,
+        'updated_time':Timestamp.now()
+      });
+      print('ユーザー情報の更新完了');
+      return true;
+    } on FirebaseException catch(e) {
+      print('ユーザー情報の更新エラー: $e');
+      return false;
+    }
+  }
+
+  // static getPostUserMap(List<String> postAccountIds) {}
+
+
+  static Future<Map<String, Account>?> getPostUserMap(List<String> accountIds) async {
+  Map<String, Account> map = {};
+  try {
+    await Future.forEach(accountIds, (String accountId) async{
+      var doc = await users.doc(accountId).get();
+      Map<String,dynamic> data = doc.data() as Map<String, dynamic>;
+      Account postAccount = Account(
+        id: accountId,
+        name: data['name'],
+        imagePath: data['user_id'],
+        selfIntroduction: data['self_introduction'],
+        createTime: data['created_time'],
+        updateTime: data['updated_time']
+      );
+      map[accountId] = postAccount;
+    });
+    print('投稿ユーザーの情報取得完了');
+    return map;
+  } on FirebaseException catch(e) {
+    print('投稿ユーザーの情報取得エラー');
+    return null;
+  } 
+  }
+  static Future<dynamic> deleteUser(String accountId) async{
+    users.doc(accountId).delete();
+    PostFirestore.deletePosts(accountId);
+  }
+
 }

@@ -8,7 +8,10 @@ class FunctionUtils {
     ImagePicker picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     return pickedFile;
-    
+    // if(pickedFile != null) {
+    //     setState(() {
+    //       image = File(pickedFile.path);
+  
   }
       
   static Future<String> uploadImage(String uid, File image) async{

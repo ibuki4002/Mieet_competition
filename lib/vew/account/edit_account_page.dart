@@ -1,12 +1,15 @@
 import 'dart:io';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/foundation/key.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter_app_twitter/model/account.dart';
 import 'package:flutter_app_twitter/utils/authentication.dart';
+import 'package:flutter_app_twitter/utils/firestore/users.dart';
 import 'package:flutter_app_twitter/utils/function_utils.dart';
 import 'package:flutter_app_twitter/utils/widget_utils.dart';
+import 'package:flutter_app_twitter/vew/start_up/login_page.dart';
 import 'package:image_picker/image_picker.dart';
 
 
@@ -53,14 +56,17 @@ ImageProvider getImage(){
             children: [
               SizedBox(height: 30,),
               GestureDetector(
+                
                 onTap: (() async{
                   var result = FunctionUtils.getImageFromGallerly();
                   if (result != null) {
                     setState(() {
-                      image = File(result.Path);//何でエラーになっちゃうんだ
+                      image = File(result.path);//何でエラーになっちゃうんだ
                     });
                   }
                 }),
+               
+
                 child: CircleAvatar(
                   foregroundImage: getImage(),
                   radius: 40,
@@ -97,13 +103,57 @@ ImageProvider getImage(){
                 onPressed: () async {
                   if(nameController.text.isNotEmpty
                       && useIdController.text.isNotEmpty
-                      && selfIntoroductionController.text.isNotEmpty
-                      && image != null) {
-                    
+                      && selfIntoroductionController.text.isNotEmpty) {
+                    String imagePath = '';
+                    if (image == null) {
+                      imagePath = myaccount.imagePath;
+                    } else {
+                      var result = await FunctionUtils.uploadImage(myaccount.id, image!);
+                      imagePath = result;
+                    }
+                    Account updateAccount = Account(
+                      id: myaccount.id,
+                      name: nameController.text,
+                      userId: useIdController.text,
+                      selfIntroduction: selfIntoroductionController.text,
+                      imagePath: imagePath
+                    );
+                    Authentication.myAccount = updateAccount;
+                    var result = await UserFirestore.updateUser(updateAccount);
+                    if (result == true) {
+                      Navigator.pop(context, true);
+                    }
+
                   };
                 }, 
                 child: Text('更新')
               ),
+              SizedBox(height: 50,),
+              ElevatedButton(onPressed: () {
+                Authentication.signOut();
+                while (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                }
+                Navigator.pushReplacement(context, MaterialPageRoute(
+                  builder: (context) => LoginPage()
+                  ));
+              },
+              child: Text('ログアウト')
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(primary: Colors.red),
+              onPressed: () {
+                UserFirestore.deleteUser(myaccount.id);
+                Authentication.deleteAuth();
+                while (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                }
+                Navigator.pushReplacement(context, MaterialPageRoute(
+                  builder: (context) => LoginPage()
+                  ));
+              },
+              child: Text('アカウントを削除')
+            ),
             ],
           ),
         ),
