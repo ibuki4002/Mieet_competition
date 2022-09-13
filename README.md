@@ -1,6 +1,6 @@
 # flutter_app_twitter
 
-A new Flutter project.
+Firebase × FirebaseでTwitterみたいなSNSアプリを作成する / セクション③
 
 ## Getting Started
 
