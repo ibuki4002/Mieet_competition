@@ -26,7 +26,9 @@ import 'package:flutter_app_twitter/model/account.dart';
 import 'package:flutter_app_twitter/utils/authentication.dart';
 import 'package:flutter_app_twitter/utils/firestore/users.dart';
 import 'package:flutter_app_twitter/utils/function_utils.dart';
-import 'package:flutter_app_twitter/utils/widget_utils.dart';
+import 'package:image_picker/image_picker.dart';
+
+
 
 class CreateAccountPage extends StatefulWidget {
   const CreateAccountPage({Key? key}) : super(key: key);
@@ -42,34 +44,45 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
   TextEditingController passController = TextEditingController();
   TextEditingController emailController = TextEditingController();//入力された情報を取り込む
   File? image;
+  ImagePicker picker = ImagePicker();
+  Future<void> getImageFromGallery() async{
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if(pickedFile!= null){
+      setState((
+      ){ 
+        image = File(pickedFile.path);
 
-  
+      });
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: WidgetUtils.createAppBar('新規登録'),
+      appBar: AppBar(
+        title:Center(child: Text('新規登録')),
+      ),
       body: SingleChildScrollView (
         child: Container(
           width: double.infinity,
           child: Column(
             children: [
-              SizedBox(height: 30,),
+              SizedBox(height:30,),
               GestureDetector(
-                onTap: () async{
-                  var result = FunctionUtils.getImageFromGallerly();
-                  if (result != null ) {
-                    setState(() {
-                      image = File(result.path); //ここもエラー出ちゃう
-                    });
-                  }
-                },
+                onTap:(() {
+                  getImageFromGallery();
+                }),
                 child: CircleAvatar(
-                  foregroundImage: image == null ? null: FileImage(image!),//写真を選択
-                  radius: 40,
                   child: Icon(Icons.add),
+                  foregroundImage: image == null ? null : FileImage(image!),
+                  radius: 40,
+                  backgroundColor: Color.fromARGB(240,221,182,0),
                 ),
               ),
+
+              SizedBox(height: 30,),
+              
               Container(
                 width: 300,
                 child: TextField(
@@ -119,22 +132,28 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                       && selfIntoroductionController.text.isNotEmpty
                       && emailController.text.isNotEmpty
                       && passController.text.isNotEmpty
-                      && image != null) {
+                      && image != null
+                      ) {
                     var result = await Authentication.signUp(email: emailController.text , pass: passController.text );
-                    if (result is UserCredential ) {
-                      String imagePath = await FunctionUtils.uploadImage(result.user!.uid, image!);
-                      Account newAccount = Account(
+                      
+                    if(result is UserCredential){
+                       String imagePath = await FunctionUtils.uploadImage(result.user!.uid, image!);
+                       Account newAccount = Account(
                         id: result.user!.uid,
                         name: nameController.text,
                         userId: useIdController.text,
-                        selfIntroduction: selfIntoroductionController.text,
+                        selfintroduction: selfIntoroductionController .text,
                         imagePath: imagePath,
-                      );
-                      var _result = await UserFirestore.setUser(newAccount);
-                      if (_result == true) {
-                        Navigator.pop(context);
-                      }
-                    }
+                       );
+                        var _result = await UserFirestore.setUser(newAccount);
+                        if(_result==true){
+                           Navigator.pop(context);
+                        }
+                       
+                     }else{
+                      
+                     }
+                    
                   };
                 }, 
                 child: Text('アカウントを作成')

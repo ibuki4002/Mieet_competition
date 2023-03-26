@@ -5,7 +5,8 @@ import 'package:flutter/src/foundation/key.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter_app_twitter/utils/authentication.dart';
 import 'package:flutter_app_twitter/utils/firestore/users.dart';
-import 'package:flutter_app_twitter/vew/screen.dart';
+import 'package:flutter_app_twitter/vew/review/add_book.dart';
+import 'package:flutter_app_twitter/vew/review/screen.dart';
 import 'package:flutter_app_twitter/vew/start_up/create_account_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -28,7 +29,7 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             children: [
               SizedBox(height: 50,),
-              Text('Mieet',style: TextStyle(color: Colors.orange.shade400,fontSize: 50, fontWeight: FontWeight.bold) ),
+              Text('Rebiew',style: TextStyle(color: Color.fromARGB(240,221,182,0),fontSize: 50, fontWeight: FontWeight.bold) ),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20.0),//上下に余白を付ける
                 child: Container(
@@ -69,12 +70,17 @@ class _LoginPageState extends State<LoginPage> {
               ElevatedButton(
                 onPressed: () async{
                   var result = await Authentication.emailSignIn(email: emailController.text , pass: passController.text );
-                  if (result is UserCredential ) {
-                    var _result = await UserFirestore.getUser(result.user!.uid);
-                    if (_result == true ) {
-                      Navigator.pushReplacement(context, MaterialPageRoute(builder: ((context) => Screen())));
-                    }
-                  }
+                 
+                    if(result is UserCredential){
+                 var _result = await UserFirestore.getUser(result.user!.uid);
+                 if(_result==true){
+
+                 Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Screen()));
+                 }
+               }else{
+                print('ログイン失敗');
+               }
+                  
                   //押すと遷移する
                   //pushReplacementで前のログインページに戻る（機能ボタン）がなくなる
                  

@@ -26,7 +26,7 @@ class Authentication {
         );
         currentFirebaseUser = _result.user;
         print('authサインイン完了');
-        return  _result;
+        return _result;
     } on FirebaseAuthException catch (e) {
       print('authサインインエラー: $e');
       return false;

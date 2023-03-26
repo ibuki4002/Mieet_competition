@@ -1,0 +1,15 @@
+GestureDetector(
+                onTap: () async{
+                  var result = FunctionUtils.getImageFromGallerly();
+                  if (result != null ) {
+                    setState(() {
+                      image = File(result.path); //ここもエラー出ちゃう
+                    });
+                  }
+                },
+                child: CircleAvatar(
+                  foregroundImage: image == null ? null: FileImage(image!),//写真を選択
+                  radius: 40,
+                  child: Icon(Icons.add),
+                ),
+              ),
